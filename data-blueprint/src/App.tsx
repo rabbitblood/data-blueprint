@@ -83,7 +83,7 @@ function App() {
         drawBackground(ctx);
         testObjects.forEach((obj) => {
           drawObject(ctx!, obj, cam);
-          drawPortConnections(ctx, obj, cam);
+          drawPortConnections(ctx, obj);
           drawDataFlow(ctx, obj, currentDataFlowPercentage);
         });
         drawUI(ctx);
@@ -466,8 +466,7 @@ function App() {
 
   function drawPortConnections(
     ctx: CanvasRenderingContext2D,
-    obj: diagramObject,
-    cam: camera
+    obj: diagramObject
   ) {
     if (!obj.attributes) return;
 
