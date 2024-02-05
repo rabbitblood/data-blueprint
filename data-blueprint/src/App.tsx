@@ -478,13 +478,10 @@ function App() {
       if (inputPort.connectedOutput) {
         ctx.strokeStyle = "white";
         ctx.beginPath();
-        ctx.moveTo(
-          cam.position.x + inputPort.position.x,
-          cam.position.y + inputPort.position.y
-        );
+        ctx.moveTo(inputPort.position.x, inputPort.position.y);
         ctx.lineTo(
-          cam.position.x + inputPort.connectedOutput.position.x,
-          cam.position.y + inputPort.connectedOutput.position.y
+          inputPort.connectedOutput.position.x,
+          inputPort.connectedOutput.position.y
         );
         ctx.stroke();
       }
@@ -502,10 +499,10 @@ function App() {
         const outputPort = attr.inputPort.connectedOutput;
         const inputPort = attr.inputPort;
 
-        const x1 = cam.position.x + outputPort.position.x;
-        const y1 = cam.position.y + outputPort.position.y;
-        const x2 = cam.position.x + inputPort.position.x;
-        const y2 = cam.position.y + inputPort.position.y;
+        const x1 = outputPort.position.x;
+        const y1 = outputPort.position.y;
+        const x2 = inputPort.position.x;
+        const y2 = inputPort.position.y;
 
         const dx = x2 - x1;
         const dy = y2 - y1;
