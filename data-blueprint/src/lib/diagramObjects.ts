@@ -15,6 +15,18 @@ class diagramObject {
     this.name = name;
     this.attributes = [];
   }
+
+  
+  addAttribute(){
+    const newAttr = new attribute("newAttribute")
+    newAttr.inputPort = new inputPort(newAttr);
+    newAttr.outputPort = new outputPort(newAttr);
+    this.attributes.push(newAttr);
+  }
+
+  addExistingAttribute(attribute: attribute){
+    this.attributes.push(attribute);
+  }
 }
 
 class calculationObject extends diagramObject {

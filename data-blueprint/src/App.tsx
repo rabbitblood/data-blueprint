@@ -48,19 +48,20 @@ function App() {
   testAttribute3.inputPort = new inputPort(testAttribute3);
   testAttribute3.outputPort = new outputPort(testAttribute3);
 
-  const testObject: diagramObject = {
-    id: 1,
-    position: { x: 200, y: 200 },
-    size: { width: 100, height: 100 },
-    attributes: [testAttribute1, testAttribute2],
-  };
+  const testObject: diagramObject = new diagramObject(
+    1,
+    { x: 200, y: 200 },
+    { width: 100, height: 100 }
+  );
+  testObject.addExistingAttribute(testAttribute1);
+  testObject.addExistingAttribute(testAttribute2);
 
-  const testObject2: diagramObject = {
-    id: 2,
-    position: { x: 500, y: 500 },
-    size: { width: 100, height: 100 },
-    attributes: [testAttribute3],
-  };
+  const testObject2: diagramObject = new diagramObject(
+    2,
+    { x: 500, y: 500 },
+    { width: 100, height: 100 }
+  );
+  testObject2.addExistingAttribute(testAttribute3);
 
   const testData: staticDataObject = new staticDataObject();
 
