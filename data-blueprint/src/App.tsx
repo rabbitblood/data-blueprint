@@ -15,7 +15,7 @@ import {
   port,
   attribute,
   staticDataObject,
-  clickable,
+  uiElement,
 } from "./lib/diagramObjects";
 
 function App() {
@@ -68,6 +68,13 @@ function App() {
 
   const testObjects: diagramObject[] = [testObject, testObject2, testData];
 
+  //--------------ui elements----------------
+  const newDiagramObjectButton: uiElement = new uiElement(
+    { x: window.innerWidth - 100, y: 50 },
+    { width: 50, height: 50 }
+  );
+  const uiElements: uiElement[] = [newDiagramObjectButton];
+
   useEffect(() => {
     const ctx = canvas.current?.getContext("2d");
     canvas.current!.width = window.innerWidth;
@@ -101,7 +108,6 @@ function App() {
             ctx.moveTo(currentPort.position.x, currentPort.position.y);
             ctx.lineTo(lastFrameMousePos.x, lastFrameMousePos.y);
             ctx.stroke();
-            console.log(lastFrameMousePos.x, lastFrameMousePos.y);
           }
         }
 
@@ -122,6 +128,15 @@ function App() {
     //-------------------------------------mouse input------------------------------------
     addEventListener("mousedown", (e: MouseEvent) => {
       lastFrameMousePos = { x: e.clientX, y: e.clientY };
+      //check if mouse is over a ui element
+      for (const uiElement of uiElements) {
+        if (uiElement.checkMouseOver({ x: e.clientX, y: e.clientY }, cam)) {
+          console.log("clicked ui element");
+          const newDiagram = uiElement.onClick();
+          testObjects.push(newDiagram);
+        }
+      }
+
       //check if mouse is over an object
       for (const obj of testObjects) {
         if (isMouseOnObject({ x: e.clientX, y: e.clientY }, obj, cam)) {
@@ -406,6 +421,26 @@ function App() {
       align: "center",
       justify: true,
       fontSize: 20,
+      debug: isDebug,
+    });
+
+    //draw icon for instantiate new diagram object
+    ctx.fillStyle = "cyan";
+    ctx.fillRect(
+      window.innerWidth - newDiagramObjectButton.size.width * 2,
+      newDiagramObjectButton.size.height,
+      newDiagramObjectButton.size.width,
+      newDiagramObjectButton.size.height
+    );
+    ctx.fillStyle = "black";
+    drawText(ctx, "+", {
+      x: window.innerWidth - newDiagramObjectButton.size.width * 2,
+      y: newDiagramObjectButton.size.height,
+      width: newDiagramObjectButton.size.width,
+      height: newDiagramObjectButton.size.height,
+      align: "center",
+      justify: true,
+      fontSize: 50,
       debug: isDebug,
     });
   }

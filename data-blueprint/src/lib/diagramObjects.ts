@@ -188,5 +188,32 @@ class outputPort extends port  {
   }
 }
 
+class uiElement implements clickable{
+  position: position;
+  size: size;
+  highlight?: boolean;
+
+  constructor(position: position, size: size){
+    this.position = position;
+    this.size = size;
+  }
+
+  onClick(){
+    const diagram = new diagramObject(1, {x: 100, y: 100}, {width: 100, height: 100}, "newDiagram");
+    diagram.addAttribute();
+
+    return diagram;
+  }
+
+  checkMouseOver(mousePos: position, cam: camera): boolean{
+    if(mousePos.x > this.position.x && mousePos.x < this.position.x + this.size.width &&
+      mousePos.y > this.position.y && mousePos.y < this.position.y + this.size.height*cam.zoom){
+        return true;
+      }
+      return false;
+
+  }
+}
+
 export type {clickable};
-export {diagramObject, calculationObject, inputPort, outputPort, port,attribute,staticDataObject};
+export {diagramObject, calculationObject, inputPort, outputPort, port,attribute,staticDataObject,uiElement};
