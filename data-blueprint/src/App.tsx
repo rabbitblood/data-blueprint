@@ -14,6 +14,7 @@ import {
   outputPort,
   port,
   attribute,
+  staticDataObject,
 } from "./lib/diagramObjects";
 
 function App() {
@@ -49,7 +50,7 @@ function App() {
 
   const testObject: diagramObject = {
     id: 1,
-    position: { x: 5, y: 5 },
+    position: { x: 200, y: 200 },
     size: { width: 100, height: 100 },
     attributes: [testAttribute1, testAttribute2],
   };
@@ -61,7 +62,9 @@ function App() {
     attributes: [testAttribute3],
   };
 
-  const testObjects: diagramObject[] = [testObject, testObject2];
+  const testData: staticDataObject = new staticDataObject();
+
+  const testObjects: diagramObject[] = [testObject, testObject2, testData];
 
   useEffect(() => {
     const ctx = canvas.current?.getContext("2d");
@@ -251,7 +254,7 @@ function App() {
 
             for (let i = 0; i < obj.attributes.length; i++) {
               const outputPort = obj.attributes[i].outputPort;
-              if (!outputPort) return;
+              if (!outputPort) continue;
               outputPort.highlight = false;
 
               const port = isMouseOnPort(
@@ -275,7 +278,7 @@ function App() {
 
             for (let i = 0; i < obj.attributes.length; i++) {
               const inputPort = obj.attributes[i].inputPort;
-              if (!inputPort) return;
+              if (!inputPort) continue;
 
               inputPort.highlight = false;
 
@@ -428,40 +431,45 @@ function App() {
     pos: position,
     obj: diagramObject
   ) {
-    if (!attr.inputPort || !attr.outputPort) return;
+    if (attr.inputPort) {
+      //set ports world position
+      attr.inputPort.position = {
+        x: cam.position.x + pos.x,
+        y: cam.position.y + pos.y + (portSize / 2) * cam.zoom,
+      };
 
-    //set ports world position
-    attr.inputPort.position = {
-      x: cam.position.x + pos.x,
-      y: cam.position.y + pos.y + (portSize / 2) * cam.zoom,
-    };
-
-    attr.outputPort.position = {
-      x:
-        cam.position.x +
-        pos.x +
-        obj.size.width * cam.zoom -
+      //draw input port
+      ctx.fillStyle = attr.inputPort.highlight ? "yellow" : "blue";
+      ctx.fillRect(
+        cam.position.x + pos.x,
+        cam.position.y + pos.y + (portSize / 2) * cam.zoom,
         portSize * cam.zoom,
-      y: cam.position.y + pos.y + (portSize / 2) * cam.zoom,
-    };
+        portSize * cam.zoom
+      );
+    }
 
-    //draw input port
-    ctx.fillStyle = attr.inputPort.highlight ? "yellow" : "blue";
-    ctx.fillRect(
-      cam.position.x + pos.x,
-      cam.position.y + pos.y + (portSize / 2) * cam.zoom,
-      portSize * cam.zoom,
-      portSize * cam.zoom
-    );
+    if (attr.outputPort) {
+      attr.outputPort.position = {
+        x:
+          cam.position.x +
+          pos.x +
+          obj.size.width * cam.zoom -
+          portSize * cam.zoom,
+        y: cam.position.y + pos.y + (portSize / 2) * cam.zoom,
+      };
 
-    //draw output port
-    ctx.fillStyle = attr.outputPort.highlight ? "yellow" : "red";
-    ctx.fillRect(
-      cam.position.x + pos.x + obj.size.width * cam.zoom - portSize * cam.zoom,
-      cam.position.y + pos.y + (portSize / 2) * cam.zoom,
-      portSize * cam.zoom,
-      portSize * cam.zoom
-    );
+      //draw output port
+      ctx.fillStyle = attr.outputPort.highlight ? "yellow" : "red";
+      ctx.fillRect(
+        cam.position.x +
+          pos.x +
+          obj.size.width * cam.zoom -
+          portSize * cam.zoom,
+        cam.position.y + pos.y + (portSize / 2) * cam.zoom,
+        portSize * cam.zoom,
+        portSize * cam.zoom
+      );
+    }
   }
 
   function drawPortConnections(
@@ -554,28 +562,28 @@ function App() {
     for (let i = 0; i < obj.attributes.length; i++) {
       //check input port
       const inputPort = obj.attributes[i].inputPort;
-      if (!inputPort) return;
-
-      if (
-        mousePos.x > inputPort.position.x &&
-        mousePos.x < inputPort.position.x + portSize * cam.zoom &&
-        mousePos.y > inputPort.position.y &&
-        mousePos.y < inputPort.position.y + portSize * cam.zoom
-      ) {
-        return obj.attributes[i].inputPort;
+      if (inputPort) {
+        if (
+          mousePos.x > inputPort.position.x &&
+          mousePos.x < inputPort.position.x + portSize * cam.zoom &&
+          mousePos.y > inputPort.position.y &&
+          mousePos.y < inputPort.position.y + portSize * cam.zoom
+        ) {
+          return obj.attributes[i].inputPort;
+        }
       }
 
       //check output port
       const outputPort = obj.attributes[i].outputPort;
-      if (!outputPort) return;
-
-      if (
-        mousePos.x > outputPort.position.x &&
-        mousePos.x < outputPort.position.x + portSize * cam.zoom &&
-        mousePos.y > outputPort.position.y &&
-        mousePos.y < outputPort.position.y + portSize * cam.zoom
-      ) {
-        return obj.attributes[i].outputPort;
+      if (outputPort) {
+        if (
+          mousePos.x > outputPort.position.x &&
+          mousePos.x < outputPort.position.x + portSize * cam.zoom &&
+          mousePos.y > outputPort.position.y &&
+          mousePos.y < outputPort.position.y + portSize * cam.zoom
+        ) {
+          return obj.attributes[i].outputPort;
+        }
       }
     }
 

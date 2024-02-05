@@ -1,21 +1,43 @@
+import { staticDataSize } from "../blueprintConsts";
+
 class diagramObject {
   id: number;
   name?: string;
   position: position;
   size: size;
   highlight?: boolean;
-  attributes?: attribute[];
+  attributes: attribute[];
 
   constructor(id: number, position: position, size: size, name?: string){
     this.id = id;
     this.position = position;
     this.size = size;
     this.name = name;
+    this.attributes = [];
   }
 }
 
 class calculationObject extends diagramObject {
   //
+}
+
+class staticDataObject extends diagramObject {
+  constructor(id?:number, position?: position, name?: string){
+    super(
+      id?id:0,
+      position?position: { x: 0, y: 0 },
+      {width: staticDataSize,height: staticDataSize},
+      name
+      );
+
+      this.addAttribute();
+  }
+
+  addAttribute(){
+    const newAttr = new attribute("newAttribute")
+    newAttr.outputPort = new outputPort(newAttr);
+    this.attributes.push(newAttr);
+  }
 }
 
 
@@ -66,4 +88,4 @@ class outputPort extends port  {
     super(parentAttribute ,"output", position);
   }
 }
-export {diagramObject, calculationObject, inputPort, outputPort, port,attribute};
+export {diagramObject, calculationObject, inputPort, outputPort, port,attribute,staticDataObject};
