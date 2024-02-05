@@ -15,6 +15,7 @@ import {
   port,
   attribute,
   staticDataObject,
+  clickable,
 } from "./lib/diagramObjects";
 
 function App() {
@@ -27,7 +28,7 @@ function App() {
   let currentDataFlowPercentage: number = useRef(0).current;
 
   let beginDrag: boolean = useRef(false).current;
-  let lastDragPos: position = useRef({ x: 0, y: 0 }).current;
+  let lastFrameMousePos: position = useRef({ x: 0, y: 0 }).current;
 
   let beginObjectDrag: boolean = useRef(false).current;
   let dragingObject: diagramObject | null = useRef(null).current;
@@ -98,8 +99,9 @@ function App() {
             ctx.strokeStyle = "white";
             ctx.beginPath();
             ctx.moveTo(currentPort.position.x, currentPort.position.y);
-            ctx.lineTo(lastDragPos.x, lastDragPos.y);
+            ctx.lineTo(lastFrameMousePos.x, lastFrameMousePos.y);
             ctx.stroke();
+            console.log(lastFrameMousePos.x, lastFrameMousePos.y);
           }
         }
 
@@ -119,21 +121,30 @@ function App() {
 
     //-------------------------------------mouse input------------------------------------
     addEventListener("mousedown", (e: MouseEvent) => {
-      lastDragPos = { x: e.clientX, y: e.clientY };
+      lastFrameMousePos = { x: e.clientX, y: e.clientY };
       //check if mouse is over an object
       for (const obj of testObjects) {
         if (isMouseOnObject({ x: e.clientX, y: e.clientY }, obj, cam)) {
           //check if mouse is over a port
           if (obj.attributes) {
             for (let i = 0; i < obj.attributes.length; i++) {
-              currentPort = isMouseOnPort(
-                { x: e.clientX, y: e.clientY },
-                obj,
-                cam
-              );
-              if (currentPort) {
-                beginAttributeConnection = true;
-                break;
+              if (
+                obj.attributes[i].checkMouseOver(
+                  { x: e.clientX, y: e.clientY },
+                  cam
+                )
+              ) {
+                currentPort = isMouseOnPort(
+                  { x: e.clientX, y: e.clientY },
+                  obj,
+                  cam
+                );
+                if (currentPort) {
+                  beginAttributeConnection = true;
+                  break;
+                } else {
+                  obj.attributes[i].onClick();
+                }
               }
             }
           }
@@ -156,13 +167,11 @@ function App() {
 
     addEventListener("mousemove", (e: MouseEvent) => {
       if (beginDrag) {
-        cam.position.x += (e.clientX - lastDragPos.x) / cam.zoom;
-        cam.position.y += (e.clientY - lastDragPos.y) / cam.zoom;
-        lastDragPos = { x: e.clientX, y: e.clientY };
+        cam.position.x += (e.clientX - lastFrameMousePos.x) / cam.zoom;
+        cam.position.y += (e.clientY - lastFrameMousePos.y) / cam.zoom;
       } else if (beginObjectDrag) {
-        dragingObject!.position.x += e.clientX - lastDragPos.x;
-        dragingObject!.position.y += e.clientY - lastDragPos.y;
-        lastDragPos = { x: e.clientX, y: e.clientY };
+        dragingObject!.position.x += e.clientX - lastFrameMousePos.x;
+        dragingObject!.position.y += e.clientY - lastFrameMousePos.y;
       } else if (beginAttributeConnection) {
         //draw line from port to mouse position
         const portPos = currentPort?.position;
@@ -173,7 +182,6 @@ function App() {
           ctx!.lineTo(e.clientX, e.clientY);
           ctx!.stroke();
         }
-        lastDragPos = { x: e.clientX, y: e.clientY };
 
         //if current port is input, highlight output ports when mouse is over them
         for (const obj of testObjects) {
@@ -182,7 +190,7 @@ function App() {
           if (currentPort?.type === "input") {
             for (let i = 0; i < obj.attributes.length; i++) {
               const outputPort = obj.attributes[i].outputPort;
-              if (!outputPort) return;
+              if (!outputPort) continue;
 
               outputPort.highlight = false;
 
@@ -201,7 +209,7 @@ function App() {
           else {
             for (let i = 0; i < obj.attributes.length; i++) {
               const inputPort = obj.attributes[i].inputPort;
-              if (!inputPort) return;
+              if (!inputPort) continue;
 
               inputPort.highlight = false;
 
@@ -221,6 +229,7 @@ function App() {
         for (const obj of testObjects) {
           obj.highlight = false;
           obj.attributes?.forEach((attr) => {
+            attr.highlight = false;
             if (attr.inputPort) {
               attr.inputPort.highlight = false;
             }
@@ -231,22 +240,41 @@ function App() {
           });
 
           if (isMouseOnObject({ x: e.clientX, y: e.clientY }, obj, cam)) {
-            const port = isMouseOnPort(
-              { x: e.clientX, y: e.clientY },
-              obj,
-              cam
-            );
-            if (port) {
-              port.highlight = true;
-            } else {
-              obj.highlight = true;
+            for (let i = 0; i < obj.attributes.length; i++) {
+              if (
+                obj.attributes[i].checkMouseOver(
+                  { x: e.clientX, y: e.clientY },
+                  cam
+                )
+              ) {
+                const port = isMouseOnPort(
+                  { x: e.clientX, y: e.clientY },
+                  obj,
+                  cam
+                );
+                if (port) {
+                  port.highlight = true;
+                  obj.highlight = false;
+                  break;
+                } else {
+                  obj.attributes[i].highlight = true;
+                  obj.highlight = false;
+                  break;
+                }
+              } else {
+                obj.highlight = true;
+              }
             }
           }
         }
       }
+
+      lastFrameMousePos = { x: e.clientX, y: e.clientY };
     });
 
-    addEventListener("mouseup", () => {
+    addEventListener("mouseup", (e) => {
+      lastFrameMousePos = { x: e.clientX, y: e.clientY };
+
       if (beginAttributeConnection) {
         //if current port is input, connect to output port if mouse is over it
         if (currentPort?.type === "input") {
@@ -259,15 +287,15 @@ function App() {
               outputPort.highlight = false;
 
               const port = isMouseOnPort(
-                { x: lastDragPos.x, y: lastDragPos.y },
+                { x: lastFrameMousePos.x, y: lastFrameMousePos.y },
                 obj,
                 cam
               );
 
-              if (port && port.type === "output" && port !== currentPort) {
-                (currentPort as inputPort).connectedOutput = port;
+              if (port && port.type === "output") {
+                (currentPort as inputPort).connectedOutput = port as outputPort;
                 (port as outputPort).connectedInput = currentPort as inputPort;
-                break;
+                continue;
               }
             }
           }
@@ -284,15 +312,15 @@ function App() {
               inputPort.highlight = false;
 
               const port = isMouseOnPort(
-                { x: lastDragPos.x, y: lastDragPos.y },
+                { x: lastFrameMousePos.x, y: lastFrameMousePos.y },
                 obj,
                 cam
               );
 
-              if (port && port.type === "input" && port !== currentPort) {
-                (currentPort as outputPort).connectedInput = port;
+              if (port && port.type === "input") {
+                (currentPort as outputPort).connectedInput = port as inputPort;
                 (port as inputPort).connectedOutput = currentPort as outputPort;
-                break;
+                continue;
               }
             }
           }
@@ -320,20 +348,20 @@ function App() {
     });
 
     //----------------------------------keyboard input-----------------------------------
-    addEventListener("keypress", (e: KeyboardEvent) => {
-      if (e.key === "w") {
-        cam.position.y += 20 / cam.zoom;
-      }
-      if (e.key === "s") {
-        cam.position.y -= 20 / cam.zoom;
-      }
-      if (e.key === "a") {
-        cam.position.x += 20 / cam.zoom;
-      }
-      if (e.key === "d") {
-        cam.position.x -= 20 / cam.zoom;
-      }
-    });
+    // addEventListener("keypress", (e: KeyboardEvent) => {
+    //   if (e.key === "w") {
+    //     cam.position.y += 20 / cam.zoom;
+    //   }
+    //   if (e.key === "s") {
+    //     cam.position.y -= 20 / cam.zoom;
+    //   }
+    //   if (e.key === "a") {
+    //     cam.position.x += 20 / cam.zoom;
+    //   }
+    //   if (e.key === "d") {
+    //     cam.position.x -= 20 / cam.zoom;
+    //   }
+    // });
   }, []);
 
   function drawBackground(ctx: CanvasRenderingContext2D) {
@@ -360,6 +388,19 @@ function App() {
     drawText(ctx, `Zoom: ${cam.zoom.toFixed(2)}`, {
       x: 0,
       y: 50,
+      width: window.innerWidth,
+      height: 100,
+      align: "center",
+      justify: true,
+      fontSize: 20,
+      debug: isDebug,
+    });
+
+    //draw current mouse position
+    ctx.fillStyle = "white";
+    drawText(ctx, `Mouse: ${lastFrameMousePos.x}, ${lastFrameMousePos.y}`, {
+      x: 0,
+      y: 80,
       width: window.innerWidth,
       height: 100,
       align: "center",
@@ -398,10 +439,27 @@ function App() {
     if (obj.attributes && obj.attributes.length > 0) {
       for (let i = 0; i < obj.attributes.length; i++) {
         const attributDisplay = `${obj.attributes[i].name}: ${obj.attributes[i].value}`;
+
+        //update attribute world position
+        obj.attributes[i].position = {
+          x: obj.position.x + cam.position.x,
+          y: obj.position.y + currentHeight + cam.position.y,
+        };
+
+        //draw attribute box
+        ctx.fillStyle = obj.attributes[i].highlight ? "yellow" : "silver";
+        ctx.fillRect(
+          obj.attributes[i].position.x,
+          obj.attributes[i].position.y,
+          obj.size.width * cam.zoom,
+          attributeBaseHeight * cam.zoom
+        );
+
+        //draw attribute text
         ctx.fillStyle = "black";
         const th = drawText(ctx, attributDisplay, {
-          x: cam.position.x + obj.position.x,
-          y: cam.position.y + obj.position.y + currentHeight,
+          x: obj.attributes[i].position.x,
+          y: obj.attributes[i].position.y,
           width: obj.size.width * cam.zoom,
           height: attributeBaseHeight * cam.zoom,
           align: "center",
